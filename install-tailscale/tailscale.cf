@@ -8,7 +8,7 @@ bundle agent tailscale
       string => "/usr/share/keyrings/tailscale-archive-keyring.gpg";
 
     "authkey_local"
-      string => "/var/cfengine/inputs/files/tailscale_authkey.txt";
+      string => "/var/cfengine/inputs/services/homelab-policy/files/tailscale_authkey.txt";
 
     "codename" string => "$(sys.os_release[VERSION_CODENAME])";
 
