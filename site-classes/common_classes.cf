@@ -1,0 +1,15 @@
+bundle common site_classes
+{
+  classes:
+    "is_lxc"
+      expression => returnszero(
+        "/usr/bin/systemd-detect-virt --quiet --container=lxc", "noshell"
+      );
+
+    "is_docker"
+      expression => returnszero(
+        "/usr/bin/systemd-detect-virt --quiet --container=docker", "noshell"
+      );
+
+    "is_container" or => { "is_lxc", "is_docker" };
+}

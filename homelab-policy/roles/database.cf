@@ -1,0 +1,8 @@
+bundle agent role_database
+{
+  packages:
+    "postgresql-client" policy => "present";
+
+  services:
+    "postgresql" service_policy => "start";
+}

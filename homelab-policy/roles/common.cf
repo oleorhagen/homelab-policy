@@ -1,0 +1,85 @@
+bundle agent role_common
+{
+  vars:
+    "base_packages"
+      slist => {
+        "curl", "wget", "vim", "htop", "ca-certificates", "chrony", "fail2ban",
+      };
+
+  packages:
+    "$(base_packages)" policy => "present";
+
+  files:
+    "/etc/hosts"
+      edit_line => hosts_entries,
+      comment => "Ensure all cluster nodes are resolvable by hostname";
+
+    "/root/.ssh/."
+      create => "true",
+      perms => mog("700", "root", "root");
+
+    "/root/.ssh/authorized_keys"
+      create => "true",
+      perms => mog("600", "root", "root"),
+      edit_line => authorized_keys_entries,
+      comment => "Ensure admin SSH key is present on all nodes";
+
+    "/etc/ssh/sshd_config.d/99-hardening.conf"
+      create => "true",
+      content => "PasswordAuthentication no
+PermitRootLogin prohibit-password
+MaxAuthTries 3
+X11Forwarding no
+",
+      classes => if_repaired("restart_ssh");
+
+    "/etc/chrony/chrony.conf"
+      create => "true",
+      content => "pool no.pool.ntp.org iburst
+makestep 1.0 3
+rtcsync
+driftfile /var/lib/chrony/drift
+logdir /var/log/chrony
+",
+      classes => if_repaired("restart_chrony");
+
+    "/etc/fail2ban/jail.local"
+      create => "true",
+      content => "[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled = true
+",
+      classes => if_repaired("restart_fail2ban");
+
+  services:
+    restart_ssh::
+      "ssh" service_policy => "restart";
+      "chrony" service_policy => "start";
+
+    restart_chrony::
+      "chrony" service_policy => "restart";
+      "fail2ban" service_policy => "start";
+
+    restart_fail2ban::
+      "fail2ban" service_policy => "restart";
+}
+
+bundle edit_line hosts_entries
+{
+  insert_lines:
+    "10.10.10.2   orhagen-no-server.orhagen.no orhagen-no-server";
+    "10.10.10.100 postgresql-server-turnkey.orhagen.no postgresql-server-turnkey";
+    "10.10.10.101 fileserver-turnkey.orhagen.no fileserver-turnkey";
+    "10.10.10.104 pve-backup.orhagen.no pve-backup";
+    "10.10.10.105 cfengine-hub.orhagen.no cfengine-hub";
+}
+
+bundle edit_line authorized_keys_entries
+{
+  insert_lines:
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDPHLR6JQUlAhlifU1YeIz2UsLyvmWZcGQZSeiRaqRJ4K6cj6sYtk2EVhMrJnXmDuZvmF6V7DeMUw5QloGBLr5vECGgYCIqrDfMli+JSAcgdW+yN39iNMHyS9JRPGFXYs2pIcJ/eJugldhKYOZC2IvYD001wXIQ4MCx9QLGwBO0D7J32XpkqeL1KMKheODJlp+il5p8Bocls4Y0bJQIbE7xR4U7Dcw7yNqYSJ8a8b8+chc8bP7n0Z5O4qQXSQ+co/i7oOZfHWAi4+CsAjaXM02vSmhvpbulF/xj9+PfUcr/xFZ4a7T6u3D0WHgUt0GwVdSYyA2whgM4/LfZg9r/5p/w8tbBtuvOZkMrMJiVHfULcuiBdRNKdo4kUtVEMYGZfpfpE3QgRLCYXJzy43BSzdkeN57y/wJeI9TqxjIvZszmBUdK/Izl22EnB1s1Urxjtge6ZJM6ToSgm6pB9hSGtYdBpQTt9M2c7Q+msBnG1Cyw9ooDrtTl1b+viLHl12G2YXE= olepor@olepor";
+}

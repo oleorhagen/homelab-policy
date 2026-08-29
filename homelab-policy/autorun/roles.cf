@@ -1,0 +1,37 @@
+body file control
+{
+  inputs => {
+    "services/homelab-policy/roles/common.cf",
+    "services/homelab-policy/roles/vm.cf",
+    "services/homelab-policy/roles/k3s_server.cf",
+    "services/homelab-policy/roles/database.cf",
+    "services/homelab-policy/roles/fileserver.cf",
+    "services/homelab-policy/roles/cfengine_hub.cf",
+    "services/homelab-policy/roles/proxmox.cf",
+  };
+}
+
+bundle agent homelab_policy_roles
+{
+  meta:
+    "tags" slist => { "autorun" };
+
+  methods:
+    "common" usebundle => role_common;
+    "vm" usebundle => role_vm;
+
+    orhagen_no_server::
+      "k3s" usebundle => role_k3s_server;
+
+    postgresql_server_turnkey::
+      "db" usebundle => role_database;
+
+    fileserver_turnkey::
+      "files" usebundle => role_fileserver;
+
+    cfengine_hub::
+      "hub" usebundle => role_cfengine_hub;
+
+    pm1::
+      "proxmox" usebundle => role_proxmox;
+}

@@ -1,0 +1,8 @@
+bundle agent role_cfengine_hub
+{
+  packages:
+    "git" policy => "present";
+
+  services:
+    "cfengine3" service_policy => "start";
+}

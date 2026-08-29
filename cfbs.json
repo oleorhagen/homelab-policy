@@ -1,0 +1,41 @@
+{
+  "name": "homelab-policy",
+  "description": "Ole's homelab role bundles (common hardening, Proxmox host, k3s server, database, fileserver, cfengine hub, VM guests) plus Tailscale bootstrap.",
+  "type": "module-repo",
+  "tags": ["homelab", "roles"],
+  "provides": {
+    "homelab-policy": {
+      "description": "Handle my homelab policy",
+      "subdirectory": "homelab-policy",
+      "dependencies": ["autorun"],
+      "steps": [
+        "copy ./roles/common.cf services/homelab-policy/roles/common.cf",
+        "copy ./roles/proxmox.cf services/homelab-policy/roles/proxmox.cf",
+        "copy ./roles/k3s_server.cf services/homelab-policy/roles/k3s_server.cf",
+        "copy ./roles/database.cf services/homelab-policy/roles/database.cf",
+        "copy ./roles/fileserver.cf services/homelab-policy/roles/fileserver.cf",
+        "copy ./roles/cfengine_hub.cf services/homelab-policy/roles/cfengine_hub.cf",
+        "copy ./roles/vm.cf services/homelab-policy/roles/vm.cf",
+        "copy ./autorun/roles.cf services/autorun/homelab-policy-roles.cf"
+      ]
+    },
+    "install-tailscale": {
+      "description": "Simple policy for installing tailscale on my machines. Requires a TOKEN for authenticating tailscale, published through a shared file in CFEngine",
+      "tags": ["utility", "vpn"],
+      "subdirectory": "install-tailscale",
+      "dependencies": ["autorun", "site-classes"],
+      "steps": [
+        "copy ./tailscale.cf services/autorun/homelab-policy-tailscale.cf"
+      ]
+    },
+    "site-classes": {
+      "description": "Shared classes: is_lxc, is_docker, is_container",
+      "tags": ["utility", "classes"],
+      "subdirectory": "site-classes",
+      "dependencies": ["autorun"],
+      "steps": [
+        "copy ./common_classes.cf services/autorun/homelab-policy-common-classes.cf"
+      ]
+    }
+  }
+}

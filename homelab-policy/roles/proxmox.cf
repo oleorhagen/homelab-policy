@@ -1,0 +1,41 @@
+bundle agent role_proxmox
+# @brief Proxmox VE host: network and cluster configuration
+#
+# Scaffold only — fill in real bridge names, IPs, and cluster details
+# before relying on this. Notes:
+#   - /etc/network/interfaces is safe to manage directly with files/edit_line.
+#   - /etc/pve/* (including corosync.conf) is a pmxcfs FUSE mount backed by
+#     the cluster database; don't hand-edit it with CFEngine. Cluster join/
+#     leave should go through `pvecm` commands, not file promises.
+{
+  packages:
+    "auditd" policy => "present";
+    "unattended-upgrades" policy => "present";
+
+  files:
+    "/etc/network/interfaces"
+      create => "true",
+      content => readfile(
+        "$(this.promise_dirname)/files/proxmox_network_interfaces.txt", 0
+      ),
+      comment => "Manage vmbr bridges and physical uplinks";
+
+    "/etc/apt/apt.conf.d/20auto-upgrades"
+      create => "true",
+      content => "APT::Periodic::Update-Package-Lists \"1\";
+APT::Periodic::Unattended-Upgrade \"1\";
+",
+      comment => "Enable the daily apt timers; unattended-upgrades' own default
+                  /etc/apt/apt.conf.d/50unattended-upgrades already scopes
+                  Origins-Pattern to the -security origin only, so it's left
+                  as shipped rather than overridden here";
+
+  services:
+    "auditd" service_policy => "start";
+
+  commands:
+    somechange::
+      "/usr/sbin/ifreload"
+        args => "-a",
+        comment => "Apply network changes without a reboot (ifupdown2 only)";
+}

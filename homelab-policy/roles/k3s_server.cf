@@ -1,0 +1,29 @@
+bundle agent role_k3s_server
+{
+  vars:
+    "base_packages" slist => { "open-iscsi", "qemu-guest-agent" };
+
+  packages:
+    "$(base_packages)" policy => "present";
+
+  files:
+    "/etc/sysctl.d/99-k3s.conf"
+      create => "true",
+      content => "net.ipv4.ip_forward=1
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1
+",
+      classes => if_repaired("reload_sysctl");
+
+  services:
+    "qemu-guest-agent" service_policy => "start";
+
+  commands:
+    reload_sysctl::
+      "/sbin/sysctl --system" contain => in_shell;
+
+    Hr03.Min00_05::
+      "/sbin/reboot"
+        action => if_elapsed(1440),
+        comment => "Nightly reboot at 03:00";
+}

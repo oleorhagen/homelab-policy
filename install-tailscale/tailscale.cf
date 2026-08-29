@@ -1,0 +1,98 @@
+bundle agent tailscale
+{
+  meta:
+    "tags" slist => { "autorun" };
+
+  vars:
+    "keyring_path"
+      string => "/usr/share/keyrings/tailscale-archive-keyring.gpg";
+
+    "authkey_local"
+      string => "/var/cfengine/inputs/files/tailscale_authkey.txt";
+
+    "codename" string => "$(sys.os_release[VERSION_CODENAME])";
+
+    debian.!ubuntu::
+      "os_family" string => "debian";
+
+    ubuntu::
+      "os_family" string => "ubuntu";
+
+  classes:
+    "tailscale_installed"
+      expression => fileexists("/usr/bin/tailscale"),
+      scope => "namespace";
+
+    "tailscale_connected"
+      expression => returnszero(
+        "/bin/sh -c 'ip -4 addr show tailscale0 2>/dev/null | grep -q 100\\.'",
+        "useshell"
+      ),
+      if => "tailscale_installed";
+
+    "tailscale_keyring_missing" not => fileexists("$(keyring_path)");
+    "have_authkey" expression => fileexists("$(authkey_local)");
+
+  files:
+    "$(keyring_path)"
+      perms => mog("644", "root", "root"),
+      if => fileexists("$(keyring_path)");
+
+    "/etc/apt/sources.list.d/tailscale.list"
+      create => "true",
+      content => "deb [signed-by=$(keyring_path)] https://pkgs.tailscale.com/stable/$(os_family) $(codename) main$(const.n)",
+      classes => if_repaired("tailscale_source_updated"),
+      if => isvariable("os_family");
+
+    "$(authkey_local)"
+      perms => mog("600", "root", "root"),
+      if => not(
+        returnszero(
+          "/bin/sh -c 'ip -4 addr show tailscale0 2>/dev/null | grep -q 100\\.'",
+          "useshell"
+        )
+      ),
+      comment => "Fetch Tailscale auth key from hub";
+
+    is_container::
+      "/etc/default/tailscaled"
+        edit_line => default_container_networking,
+        comment => "In containers we can't use tun networking";
+
+  packages:
+    "tailscale"
+      policy => "present",
+      if => fileexists("$(keyring_path)");
+
+  services:
+    "tailscale"
+      service_policy => "start",
+      if => fileexists("/usr/bin/tailscale");
+
+  commands:
+    "/bin/sh"
+      args => "-c 'curl -fsSL https://pkgs.tailscale.com/stable/$(os_family)/$(codename).gpg | gpg --dearmor > $(keyring_path)'",
+      contain => in_shell,
+      classes => if_ok("tailscale_keyring_added"),
+      if => and(isvariable("os_family"), not(fileexists("$(keyring_path)")));
+
+    "/usr/bin/tailscale up --authkey=file:$(authkey_local) --accept-routes"
+      action => if_elapsed(60),
+      if => not("tailscale_connected"),
+      comment => "Bootstrap Tailscale if not yet connected";
+
+  reports:
+    "DEBUG $(this.bundle): tailscale keyring added"
+      if => "tailscale_keyring_added";
+
+    "DEBUG $(this.bundle): tailscale keyring added"
+      if => "!tailscale_keyring_added";
+}
+
+bundle edit_line default_container_networking
+{
+  insert_lines:
+    "
+FLAGS=\"--tun=userspace-networking\"
+";
+}

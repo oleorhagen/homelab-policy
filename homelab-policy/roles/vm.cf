@@ -1,0 +1,23 @@
+bundle agent role_vm
+# @brief Shared policy for all Proxmox VM guests
+#
+# Membership is explicit: add a host's hostname class to `is_vm` below when
+# it's a VM guest. Bare-metal/hypervisor hosts (e.g. pm1) are simply never
+# listed here, so they're unaffected without needing a negation.
+{
+  classes:
+    "is_vm"
+      or => {
+        "orhagen_no_server",
+        "postgresql_server_turnkey",
+        "fileserver_turnkey",
+        "cfengine_hub",
+      };
+
+  commands:
+    Hr00.is_vm::
+      "/bin/sh"
+        args => "-c 'DEBIAN_FRONTEND=noninteractive apt-get -q -y update && DEBIAN_FRONTEND=noninteractive apt-get -q -y dist-upgrade'",
+        action => if_elapsed(1440),
+        comment => "Update all packages once per day during the midnight hour (VM guests only)";
+}
