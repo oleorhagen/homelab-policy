@@ -1,13 +1,13 @@
 body file control
 {
   inputs => {
-    "services/homelab-policy/roles/common.cf",
-    "services/homelab-policy/roles/vm.cf",
-    "services/homelab-policy/roles/k3s_server.cf",
-    "services/homelab-policy/roles/database.cf",
-    "services/homelab-policy/roles/fileserver.cf",
-    "services/homelab-policy/roles/cfengine_hub.cf",
-    "services/homelab-policy/roles/proxmox.cf",
+    "services/homelab-policy/homelab-policy/roles/common.cf",
+    "services/homelab-policy/homelab-policy/roles/vm.cf",
+    "services/homelab-policy/homelab-policy/roles/k3s_server.cf",
+    "services/homelab-policy/homelab-policy/roles/database.cf",
+    "services/homelab-policy/homelab-policy/roles/fileserver.cf",
+    "services/homelab-policy/homelab-policy/roles/cfengine_hub.cf",
+    "services/homelab-policy/homelab-policy/roles/proxmox.cf",
   };
 }
 
