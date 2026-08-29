@@ -25,7 +25,7 @@
       "subdirectory": "install-tailscale",
       "dependencies": ["autorun", "site-classes"],
       "steps": [
-        "copy ./tailscale.cf services/autorun/homelab-policy-tailscale.cf"
+        "copy ./tailscale.cf services/autorun/tailscale.cf"
       ]
     },
     "site-classes": {
@@ -34,7 +34,7 @@
       "subdirectory": "site-classes",
       "dependencies": ["autorun"],
       "steps": [
-        "copy ./common_classes.cf services/autorun/homelab-policy-common-classes.cf"
+        "copy ./common_classes.cf services/autorun/common-classes.cf"
       ]
     }
   }
