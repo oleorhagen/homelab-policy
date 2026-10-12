@@ -78,6 +78,9 @@ bundle agent tailscale
       service_policy => "start",
       if => fileexists("/usr/bin/tailscale");
 
+    tailscaled_config_changed::
+      "tailscaled" service_policy => "restart";
+
   commands:
     "/bin/sh"
       args => "-c 'curl -fsSL https://pkgs.tailscale.com/stable/$(os_family)/$(codename).gpg | gpg --dearmor > $(keyring_path)'",
