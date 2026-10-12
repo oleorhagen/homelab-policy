@@ -56,10 +56,17 @@ bundle agent tailscale
       ),
       comment => "Fetch Tailscale auth key from hub";
 
+    is_container.!has_tun_networking::
+      "/etc/default/tailscaled"
+        edit_line => default_container_networking,
+        classes => if_repaired("tailscaled_config_changed"),
+        comment => "Containers without /dev/net/tun must use userspace networking";
+
     has_tun_networking::
       "/etc/default/tailscaled"
         edit_line => tun_container_networking,
-        comment => "In containers we can't use tun networking";
+        classes => if_repaired("tailscaled_config_changed"),
+        comment => "With /dev/net/tun, use a real tailscale0 interface";
 
   packages:
     "tailscale"
@@ -102,7 +109,5 @@ FLAGS=\"--tun=userspace-networking\"
 bundle edit_line tun_container_networking
 {
   delete_lines:
-    "
-FLAGS=\"--tun=userspace-networking\"
-";
+    'FLAGS="--tun=userspace-networking"';
 }
