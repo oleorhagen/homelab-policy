@@ -23,6 +23,8 @@ bundle agent tailscale
       expression => fileexists("/usr/bin/tailscale"),
       scope => "namespace";
 
+    "has_tun_networking" expression => fileexists("/dev/net/tun");
+
     "tailscale_connected"
       expression => returnszero(
         "/bin/sh -c 'ip -4 addr show tailscale0 2>/dev/null | grep -q 100\\.'",
@@ -54,9 +56,9 @@ bundle agent tailscale
       ),
       comment => "Fetch Tailscale auth key from hub";
 
-    is_container::
+    has_tun_networking::
       "/etc/default/tailscaled"
-        edit_line => default_container_networking,
+        edit_line => tun_container_networking,
         comment => "In containers we can't use tun networking";
 
   packages:
@@ -92,6 +94,14 @@ bundle agent tailscale
 bundle edit_line default_container_networking
 {
   insert_lines:
+    "
+FLAGS=\"--tun=userspace-networking\"
+";
+}
+
+bundle edit_line tun_container_networking
+{
+  delete_lines:
     "
 FLAGS=\"--tun=userspace-networking\"
 ";
